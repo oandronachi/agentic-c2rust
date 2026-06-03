@@ -1,0 +1,79 @@
+# =============================================================================
+# This repo ships as docs only (Markdown). The patterns below also cover the
+# Rust workspaces that get generated when someone reproduces a run in-tree
+# (the playbook scaffolds a full Cargo workspace per migration), so a fresh
+# `git status` after a reproduction stays clean.
+# =============================================================================
+
+# --- Rust / Cargo ---------------------------------------------------------
+# Matches `target/` at any depth (no `**/` prefix needed in gitignore syntax).
+target/
+
+# NOTE: Cargo.lock is INTENTIONALLY NOT ignored. The playbook commits it for
+# reproducibility. Do not add a `Cargo.lock` line here.
+
+# Backup files cargo / rustfmt can leave behind
+*.rs.bk
+*.orig
+*.rej
+
+# --- cargo-fuzz -----------------------------------------------------------
+fuzz/target/
+fuzz/corpus/
+fuzz/artifacts/
+fuzz/coverage/
+
+# --- Benchmarks / profiling -----------------------------------------------
+# Criterion HTML reports (large, regeneratable; numbers live in SUMMARY.md)
+criterion/
+# Source-based coverage
+*.profraw
+*.profdata
+# Flamegraph / perf
+flamegraph.svg
+perf.data
+perf.data.old
+
+# --- Secrets / env --------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# --- Editor / IDE ---------------------------------------------------------
+.idea/
+.vscode/
+.vs/
+*.code-workspace
+*.swp
+*.swo
+*.swn
+*~
+
+# --- OS noise -------------------------------------------------------------
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+Thumbs.db:encryptable
+desktop.ini
+ehthumbs.db
+$RECYCLE.BIN/
+
+# --- Python (defensive; some tooling/scripts may use it) ------------------
+__pycache__/
+*.py[cod]
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# --- Node (defensive) -----------------------------------------------------
+node_modules/
+
+# --- Local agent / run scratch --------------------------------------------
+scratch/
+*.log
