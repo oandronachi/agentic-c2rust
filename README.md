@@ -101,6 +101,7 @@ Every phase ends in a machine-checkable exit gate. An agentic CLI follows the pl
 ## See also
 
 - [`GLOSSARY.md`](./GLOSSARY.md) — every term used in the workflow.
+- [`AI_C2RUST_CASE_STUDY.md`](./AI_C2RUST_CASE_STUDY.md) — one-page mapping from repo evidence to the C/C++→Rust migration job.
 - [`playbook/c-to-rust-migration-playbook.md`](./playbook/c-to-rust-migration-playbook.md) — the actual workflow.
 - [`migrations/qoi/`](./migrations/qoi/) — complete checked-in QOI workspaces from Claude Code and Codex.
 - [`migrations/re2-cpp/`](./migrations/re2-cpp/) — complete checked-in Codex RE2 C++ interop workspace with Kani proof-smoke.
