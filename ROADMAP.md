@@ -1,16 +1,21 @@
-# Roadmap — what this is not yet
+# Roadmap — what remains
 
 A **recipe-and-reproducibility demo**, not a polished library. Calling that out so reviewers don't measure it against the wrong yardstick.
+
+The original roadmap listed stateful APIs and formal verification as future
+work. The current repo now includes Claude Code and Codex ring-buffer runs, plus
+a Codex RE2 C++ interop run with Kani proof-smoke harnesses; this file tracks
+what remains after those additions.
 
 ## Where the workflow is, and where it's going
 
 ```mermaid
 flowchart LR
-    A[Today<br/>workflow runs end-to-end<br/>byte-exact equivalence<br/>stateful + C++ demos] --> B[Next<br/>profile-guided<br/>optimization pass]
+    A[Today<br/>workflow runs end-to-end<br/>oracle-driven equivalence<br/>stateful + C++ + Kani smoke] --> B[Next<br/>profile-guided<br/>optimization pass]
     A --> C[Next<br/>line-by-line<br/>port-walk comments]
     A --> D[Next<br/>parallel critic agent<br/>self-review loop]
-    A --> E[Later<br/>larger stateful libraries<br/>callbacks + handles]
-    A --> F[Later<br/>deeper formal verification<br/>Kani / Creusot]
+    A --> E[Later<br/>larger systems APIs<br/>callbacks + handles]
+    A --> F[Later<br/>deeper formal verification<br/>beyond Kani smoke]
 
     classDef now fill:#e8f5e9,stroke:#1b5e20,color:#000
     classDef soon fill:#fff3cd,stroke:#856404,color:#000
@@ -20,7 +25,15 @@ flowchart LR
     class E,F later
 ```
 
-## Not done (deliberate, on the list)
+## Completed since the original roadmap
+
+| Item | Where |
+|---|---|
+| Stateful migration examples | [`runs/claude/ring-buffer.md`](./runs/claude/ring-buffer.md) and [`runs/codex/ring-buffer.md`](./runs/codex/ring-buffer.md) |
+| C++ ownership interop example | [`runs/codex/re2-cpp.md`](./runs/codex/re2-cpp.md) and [`migrations/re2-cpp/codex/re2-cpp-rs-migration`](./migrations/re2-cpp/codex/re2-cpp-rs-migration/) |
+| First Kani proof smoke | [`migrations/re2-cpp/codex/re2-cpp-rs-migration/FORMAL_VERIFICATION.md`](./migrations/re2-cpp/codex/re2-cpp-rs-migration/FORMAL_VERIFICATION.md) |
+
+## Still not done (deliberate, on the list)
 
 ### 1. Performance optimization pass
 The benchmarks measure **parity, not peak**. The Rust ports were written for correctness, safety, and readability against the spec — they were **not tuned**.
@@ -41,22 +54,22 @@ The benchmarks measure **parity, not peak**. The Rust ports were written for cor
 ### 2. Inline code commentary
 The current Rust sources carry doc-comments on the public API, safety-contract comments on every `unsafe` block, and per-test rationale in the proptest generators. They do **not** carry the line-by-line "this mirrors C function X around line Y" annotations a reader would need to follow the port against the reference. That's a reviewer-facing improvement, not a correctness one — the differential oracle is what proves the port is faithful.
 
-**Planned next pass**: write a "port walk" — `// REF: qoi.h:L###` markers on each non-trivial Rust block pointing to the corresponding C, plus a short prose section in each `lib.rs` explaining the integer-arithmetic mirroring (`u8::wrapping_sub(..) as i8`, etc.). This is the change most likely to help a C developer trust the port.
+**Planned next pass**: write a "port walk" — `// REF: path/to/reference:L###` markers on each non-trivial Rust block pointing to the corresponding C/C++ source, plus a short prose section in each `lib.rs` explaining the important semantic mirroring (integer wrapping, ownership transfer, state transitions, and similar details). This is the change most likely to help a C or C++ developer trust the port.
 
 ### 3. Parallel critic agent for self-review
 Each run is executed by a single agent. Wiring a parallel critic agent into the playbook (e.g. after Phase 4: a second agent reviews the port, runs the oracle, files a fix) is the natural next step.
 
 ### 4. Larger / harder libraries
-QOI is ~300 LOC, single-header, deterministic. xxHash one-shot is ~250 LOC, pure function. They were chosen because they let the **oracle** be byte-exact and the **port** finish in one pass. The follow-on Codex reports now add a small stateful ring buffer and a C++ RE2 ownership facade, so the next demo should move beyond "small but stateful" into callbacks, larger opaque-handle APIs, streaming parsers, or allocator-heavy libraries.
+QOI is ~300 LOC, single-header, deterministic. xxHash one-shot is ~250 LOC, pure function. The follow-on reports add small stateful ring-buffer runs and a C++ RE2 ownership facade. The next step is larger systems-shaped APIs: callbacks, larger opaque-handle APIs, streaming parsers, or allocator-heavy libraries.
 
-### 5. Formal verification path
-Differential fuzzing covers a lot, but it isn't a proof. The RE2 C++ interop run includes a first Kani proof smoke over core invariants; the next step is deeper verification on a richer pure core, or a Creusot/Kani phase that proves more than bounded no-panic and simple lifecycle invariants.
+### 5. Deeper formal verification
+The RE2 C++ interop run includes a first Kani proof smoke over core invariants. The remaining gap is deeper verification on a richer pure core, or a Creusot/Kani phase that proves more than bounded no-panic and simple lifecycle invariants.
 
 ## Working as intended (not on the roadmap)
 
 - `#![forbid(unsafe_code)]` on the safe core, compile-enforced.
 - All `unsafe` confined to the two FFI crates (`-sys`, `-cabi`) with documented contracts.
 - Vendor everything at pinned commits; commit `Cargo.lock`; record C flags.
-- `byte_exact` over `behavioral` wherever the C output is uniquely defined.
+- Use the strongest practical oracle relation: `byte_exact` where output is uniquely defined, `model_based` for stateful APIs, and `behavioral` where full equivalence is not tractable.
 
 These are load-bearing choices, not gaps.

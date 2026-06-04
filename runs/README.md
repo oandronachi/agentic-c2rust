@@ -1,6 +1,6 @@
 # Runs — cross-reproduction results matrix
 
-The original matrix contains four reproductions of the same [playbook](../playbook/c-to-rust-migration-playbook.md): **two agentic CLIs x two C libraries**. Additional Codex runs extend the coverage to a stateful C API and a C++ RAII interop component. Each run is distilled to a single page; headline details come from the generated workspace reports, notes, and verification files.
+The original matrix contains four reproductions of the same [playbook](../playbook/c-to-rust-migration-playbook.md): **two agentic CLIs x two C libraries**. Follow-on runs extend the coverage to a stateful C API and a C++ RAII interop component. Each run is distilled to a single page; headline details come from the generated workspace reports, notes, and verification files.
 
 Each run ships as two files side by side:
 
@@ -32,7 +32,7 @@ flowchart LR
 | [`codex/qoi.md`](./codex/qoi.md) → [task](./codex/qoi-task.md)         | phoboslab/qoi   | `97bacc86…0b9`           | MIT          | Codex       | C **2.01×** faster (10.1 ms vs 20.4 ms) | 0 core; 2 + 9 FFI |
 | [`codex/xxhash.md`](./codex/xxhash.md) → [task](./codex/xxhash-task.md)   | Cyan4973/xxHash | `v0.8.3` (`e626a72…363`) | BSD-2-Clause | Codex       | C **1.02×** faster (within noise)       | 0 core; 2 + 12 FFI |
 
-Every run reports: **zero mismatches; no port bug found after initial implementation.** That's the recipe working — the agent writes against a spec while the oracle holds it to byte-for-byte equality with the reference.
+Every core C run reports: **zero mismatches; no port bug found after initial implementation.** That's the recipe working — the agent writes against a spec while the oracle holds it to byte-for-byte equality with the reference.
 
 ## Verification depth (so you can judge the equivalence claim)
 
@@ -47,11 +47,12 @@ Every run reports: **zero mismatches; no port bug found after initial implementa
 
 | Run (report -> task) | What it adds | Oracle / verification |
 |---|---|---|
+| [`claude/ring-buffer.md`](./claude/ring-buffer.md) -> [task](./claude/ring-buffer-task.md) | Stateful C API with caller-provided storage, overwrite-on-full behavior, and observable state transitions | `model_based` oracle; 21 tests, 4096 generated scenarios, 4,314,505 fuzz execs, 0 crashes |
 | [`codex/ring-buffer.md`](./codex/ring-buffer.md) -> [task](./codex/ring-buffer-task.md) | Stateful C API with caller-provided storage, overwrite-on-full behavior, and observable state transitions | `model_based` oracle comparing C and Rust after each generated operation; property tests, fuzz targets, benchmarks, and CI included |
 | [`codex/re2-cpp.md`](./codex/re2-cpp.md) -> [task](./codex/re2-cpp-task.md) | C++ RAII ownership facade around non-copyable, non-movable `re2::RE2` | `behavioral` oracle over bounded literal matching; Docker validation, fuzz smoke, and Kani proof smoke completed |
 
 ## What's interesting
 
-- **The workflow is agent-agnostic.** Two different CLIs, same playbook, same two libraries → four self-contained workspaces with the same crate topology and the same equivalence guarantees. Performance numbers differ; correctness gates do not.
+- **The workflow is agent-agnostic.** The original two-CLI/two-library matrix produces four self-contained workspaces with the same crate topology and the same equivalence guarantees. Performance numbers differ; correctness gates do not.
 - **Safe Rust can reach parity.** Claude's xxHash run hits parity with C `-O3` using only safe idioms (`chunks_exact` + fixed-size arrays). QOI ports — neither tuned — sit at 0.5–0.8× C. That gap is the obvious next optimization pass (see [ROADMAP](../ROADMAP.md)).
-- **`unsafe` accounting is consistent.** The safe core is `#![forbid(unsafe_code)]` in all four runs (compile-enforced). All `unsafe` is in the two FFI crates, each block with a documented contract.
+- **`unsafe` accounting is consistent.** The safe core is `#![forbid(unsafe_code)]` in the checked runs (compile-enforced). All `unsafe` is confined to FFI crates, each block with a documented contract.

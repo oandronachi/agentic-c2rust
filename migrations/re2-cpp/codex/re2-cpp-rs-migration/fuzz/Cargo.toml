@@ -1,0 +1,27 @@
+[package]
+name = "re2-cpp-fuzz"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+re2-cpp-diff = { path = "../crates/re2-cpp-diff" }
+re2-cpp-rs = { path = "../crates/re2-cpp-rs" }
+
+[[bin]]
+name = "differential"
+path = "fuzz_targets/differential.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "no_panic"
+path = "fuzz_targets/no_panic.rs"
+test = false
+doc = false
+bench = false

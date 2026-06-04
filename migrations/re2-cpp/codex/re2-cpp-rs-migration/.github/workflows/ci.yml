@@ -1,0 +1,55 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install native dependencies
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends g++ pkg-config libre2-dev libclang-dev clang hyperfine
+      - uses: dtolnay/rust-toolchain@1.85.1
+        with:
+          components: clippy,rustfmt
+      - name: Format
+        run: cargo fmt --all -- --check
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: Test
+        run: cargo test --workspace
+      - name: Unsafe boundary check
+        run: bash scripts/check_unsafe.sh
+      - name: Bench smoke
+        run: |
+          cargo bench -p re2-cpp-rs --bench bench --no-run
+          bash scripts/bench.sh 10000
+
+  formal-verification:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install Kani
+        run: |
+          cargo +stable install kani-verifier
+          cargo +stable kani setup
+      - name: Run Kani proofs
+        run: bash scripts/verify_kani.sh
+
+  fuzz-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install native dependencies
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends g++ pkg-config libre2-dev libclang-dev clang
+      - uses: dtolnay/rust-toolchain@nightly
+      - name: Install cargo-fuzz
+        run: cargo install cargo-fuzz
+      - name: Fuzz smoke
+        run: |
+          cd fuzz
+          cargo +nightly fuzz run differential -- -runs=256
+          cargo +nightly fuzz run no_panic -- -runs=256

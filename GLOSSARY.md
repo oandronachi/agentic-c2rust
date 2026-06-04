@@ -31,7 +31,7 @@ Every term used in the workflow, the [playbook](./playbook/c-to-rust-migration-p
 - *`#![forbid(unsafe_code)]`* — crate-level attribute that makes the compiler reject any `unsafe` block in the crate. Compile-enforced, not a convention.
 - *`unsafe` block / safety contract* — Rust language feature for operations the compiler can't check (raw-pointer deref, FFI calls). Every block in this workflow carries a comment stating the invariants the caller must uphold.
 - *Total function* — a function that returns for every input rather than panicking or invoking UB. Decoders here are total on hostile input (return `Result`, bounds-check every read).
-- *Vendoring* — copying the upstream C source into this repo verbatim at a pinned commit (`vendor/<lib>/`) so the build doesn't depend on the network and the reference can't drift.
+- *Vendoring* — copying the upstream C/C++ source into this repo verbatim at a pinned commit (`vendor/<lib>/`) so the build doesn't depend on the network and the reference can't drift.
 
 ## Verification (the equivalence proof)
 
@@ -62,3 +62,6 @@ Every term used in the workflow, the [playbook](./playbook/c-to-rust-migration-p
 
 - *QOI* — "Quite OK Image" codec. ~300 LOC C, single-header, MIT, deterministic spec — clean target for `byte_exact`.
 - *xxHash* — fast non-cryptographic hash. The one-shot `XXH32` / `XXH64` APIs are ported (~250 LOC, BSD-2-Clause). Pure functions returning a scalar by value, so nothing crosses the FFI boundary by pointer.
+- *Ring Buffer* — small stateful C queue API with caller-provided storage. Used for the `model_based` run.
+- *RE2* — Google's C++ regular-expression engine. Used here as an ownership/RAII interop run, not as a full regex-engine rewrite.
+- *Kani* — Rust model checker used here for bounded proof-smoke harnesses over safe core invariants.

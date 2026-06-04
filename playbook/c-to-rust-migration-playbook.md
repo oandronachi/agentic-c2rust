@@ -9,7 +9,7 @@ The spine of the method: **never trust a port you cannot differentially compare
 against the original.** Every phase ends in a machine-checkable gate; do not
 advance past a failed gate.
 
-## The ten phases at a glance
+## The phases at a glance
 
 ```mermaid
 flowchart TD
@@ -18,7 +18,8 @@ flowchart TD
     P2 --> P3["Phase 3<br/>-sys: cc + bindgen<br/><i>ground truth from C</i>"]
     P3 --> P4["Phase 4<br/>-rs: safe Rust port<br/>forbid(unsafe_code)"]
     P4 --> P5["Phase 5<br/>-diff: proptest oracle<br/>>=1024 cases"]
-    P5 --> P6["Phase 6<br/>cargo-fuzz<br/>differential + no_panic"]
+    P5 --> P5K["Phase 5.5<br/>Kani proof smoke<br/>core invariants"]
+    P5K --> P6["Phase 6<br/>cargo-fuzz<br/>differential + no_panic"]
     P6 --> P7["Phase 7<br/>-cabi: extern C<br/>+ cbindgen + RAII free"]
     P7 --> P8["Phase 8<br/>criterion + hyperfine<br/>CI green"]
     P8 --> P9["Phase 9<br/>SUMMARY.md handoff"]
@@ -30,7 +31,7 @@ flowchart TD
     classDef ship fill:#f0d6e8,stroke:#7a1f5c,color:#000
     class P0,P1,P2 setup
     class P3,P4,P7 build
-    class P5,P6,P8 verify
+    class P5,P5K,P6,P8 verify
     class P9,P10 ship
 ```
 
@@ -68,6 +69,11 @@ opaque_types:    [${TYPES}]          # structs/handles crossing the boundary
 allocator:       ${ALLOC}            # how C allocates returned buffers: malloc | custom | caller-provided
 determinism:     ${DET}              # deterministic_bytes | deterministic_behavior | nondeterministic
 oracle_relation: ${ORACLE}           # byte_exact | behavioral | model_based   (chosen in Phase 1)
+formal_verification: ${FORMAL}       # none | kani
+proof_scope:     ${PROOF_SCOPE}      # core for first pass; do not verify FFI/sys crates initially
+proof_harnesses: [${HARNESSES}]      # Kani harness names, e.g. ["queue_preserves_invariants"]
+proof_bounds:    ${BOUNDS}           # fixed sizes / max ops / unwind count for bounded proofs
+proof_invariants: [${INVARIANTS}]    # e.g. ["num_items <= capacity", "indices < storage_len"]
 ```
 
 ---
@@ -125,11 +131,13 @@ ${output_dir}/${LIB}-rs-migration/   # output_dir defaults to the playbook's fol
 ├── REPRODUCIBILITY.md            # pins: upstream commit, toolchain, C flags
 ├── LICENSE                       # this project's license
 ├── rust-toolchain.toml           # stable (note: fuzzing needs nightly)
-├── .github/workflows/ci.yml      # gates: build/test, unsafe, fuzz-smoke, bench
+├── .github/workflows/ci.yml      # gates: build/test, unsafe, formal, fuzz-smoke, bench
+├── FORMAL_VERIFICATION.md        # Kani harnesses, bounds, invariants, limitations
 ├── vendor/${LIB}/                # upstream source @ ${COMMIT}, verbatim, + LICENSE
 ├── crates/
 │   ├── ${LIB}-rs/                # SAFE core  (#![forbid(unsafe_code)], zero deps)
 │   │   ├── src/lib.rs
+│   │   ├── src/verification.rs   # optional cfg(kani) proof harness module
 │   │   ├── tests/golden.rs + golden_data.rs   # known-answer, no C needed
 │   │   ├── benches/bench.rs                    # criterion
 │   │   └── examples/bench_bin.rs               # hyperfine subject (Rust side)
@@ -145,7 +153,7 @@ ${output_dir}/${LIB}-rs-migration/   # output_dir defaults to the playbook's fol
 ├── fuzz/                         # cargo-fuzz (own workspace; nightly)
 │   └── fuzz_targets/{differential.rs, no_panic.rs}
 ├── bench/${LIB}_cbench.c         # hyperfine subject (C side, -O3)
-└── scripts/{bench.sh, check_unsafe.sh}
+└── scripts/{bench.sh, check_unsafe.sh, verify_kani.sh}
 ```
 
 Naming: `${LIB}-rs` (core), `${LIB}-sys` (inbound FFI / ground truth), `${LIB}-cabi`
@@ -221,6 +229,16 @@ README or a `NOTES.md`), the chosen relation in Config.
 
 **Steps:** create the §3 tree and the manifests. Core crate: `#![forbid(unsafe_code)]`
 and **no dependencies**. Workspace `exclude = ["fuzz"]` (it needs nightly).
+If `${FORMAL}=kani`, add the following to the core crate manifest so normal Cargo
+builds accept `#[cfg(kani)]` harness modules without warnings:
+
+```toml
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
+
+[package.metadata.kani.flags]
+default-unwind = "${UNWIND}"
+```
 
 **Exit gate**
 - RUN (full): `cargo metadata --no-deps >/dev/null`
@@ -294,6 +312,80 @@ won't compile, check include paths and feature `#define`s.
 
 ---
 
+## Phase 5.5 — Formal verification (Kani first pass)
+
+**Goal:** prove at least one bounded safety/correctness property on the safe Rust
+core. This is a formal smoke gate, not a whole-library equivalence claim.
+
+**Steps**
+1. If `${FORMAL}=none`, write that decision and rationale in `FORMAL_VERIFICATION.md`
+   and skip the remaining steps. If `${FORMAL}=kani`, continue.
+2. Keep all proof harnesses behind `#[cfg(kani)]`, either in a `mod verification`
+   inside `src/lib.rs` or in `src/verification.rs` included only under `cfg(kani)`.
+   Normal `cargo build/test` must not require the `kani` crate.
+3. Verify the **core crate only** for the first pass. Do not point Kani at `-sys`,
+   `-cabi`, bindgen output, C code, or FFI wrappers unless a later human-approved
+   verification plan explicitly scopes those boundaries.
+4. Add at least one proof harness for one of:
+   - no panic / no out-of-bounds on a core operation,
+   - a state transition invariant,
+   - chunk handling equivalence to repeated single-step calls,
+   - buffer-length or index invariants after bounded operation sequences.
+5. Bound the proof explicitly with fixed buffer sizes, fixed array lengths, and
+   `#[kani::unwind(N)]`. Use `kani::any()` for nondeterministic input values and
+   `kani::assume(...)` only for real preconditions, not to hide bugs.
+6. Add `scripts/verify_kani.sh` with the exact Kani command(s), normally:
+   `cargo kani -p ${LIB}-rs`.
+7. Write `FORMAL_VERIFICATION.md` documenting:
+   - each harness name,
+   - the function(s) and invariant(s) under proof,
+   - bounds/unwind values,
+   - command used,
+   - result,
+   - what is **not** proved.
+
+**Standard harness pattern**
+
+```rust
+#[cfg(kani)]
+mod verification {
+    use super::*;
+
+    #[kani::proof]
+    #[kani::unwind(8)]
+    fn queue_preserves_basic_invariants() {
+        let a: u8 = kani::any();
+        let b: u8 = kani::any();
+
+        let mut rb = RingBuffer::new(4).unwrap();
+        rb.queue(a);
+        rb.queue(b);
+
+        assert!(rb.num_items() <= rb.capacity());
+        assert_eq!(rb.snapshot().len(), rb.num_items());
+        assert!(rb.indices().0 < rb.storage_len());
+        assert!(rb.indices().1 < rb.storage_len());
+    }
+}
+```
+
+For chunk APIs, also prefer a second harness proving that a bounded
+`queue_arr(&bytes[..len])`/`process_chunk(...)` path has the same observable result
+as repeated single-item calls over the same bounded slice.
+
+**Exit gate**
+- RUN (full, `${FORMAL}=kani`): `bash scripts/verify_kani.sh` passes.
+- CHECK: `FORMAL_VERIFICATION.md` states harnesses, bounds, invariants, results,
+  and limitations.
+- CHECK (no_toolchain): proof harness source and `FORMAL_VERIFICATION.md` exist,
+  and the summary clearly marks Kani as **not run**.
+
+**References:** Kani proof harnesses
+<https://model-checking.github.io/kani/reference/attributes.html>; `cargo kani`
+usage <https://model-checking.github.io/kani/usage.html>.
+
+---
+
 ## Phase 6 — Fuzzing
 
 **Goal:** find divergences and panics the structured tests miss.
@@ -345,6 +437,8 @@ won't compile, check include paths and feature `#define`s.
 - **CI** (`.github/workflows/ci.yml`) jobs:
   - `build-test` (stable; `apt install libclang-dev`; `cargo build/test --workspace`),
   - `unsafe-gate` (`scripts/check_unsafe.sh`; the `forbid` makes it compile-enforced),
+  - `formal-verification` (Kani; `cargo install --locked kani-verifier`,
+    `cargo kani setup`, then `scripts/verify_kani.sh`),
   - `fuzz-smoke` (nightly; `cargo fuzz run … -max_total_time=20` per target),
   - `bench` (criterion short sample + `scripts/bench.sh` small).
   Keep `fmt`/`clippy` **informational** until the tree is verified, then tighten to
@@ -391,19 +485,24 @@ by a differential oracle. The algorithm is `#![forbid(unsafe_code)]`; all FFI
 
 ## Equivalence guarantee
 - Relation checked: **${oracle_relation}** over functions ${FUNCS}.
-- Verified by: <fill: e.g. "2048 proptest cases + N golden vectors + T s fuzzing">.
+- Verified by: <fill: e.g. "2048 proptest cases + N golden vectors + Kani harnesses + T s fuzzing">.
 - Result: **<fill: all pass / mismatches found and fixed>**.
 
 ## Safety
 - Core (`${LIB}-rs`): zero `unsafe`, enforced at compile time by
   `#![forbid(unsafe_code)]`.
+- Formal verification: <fill: Kani harnesses run / not run>. Scope: core-only,
+  bounded proofs over <fill: invariants>. This does **not** prove whole-library
+  C/Rust equivalence or FFI correctness.
 - `unsafe` appears only in `${LIB}-sys` and `${LIB}-cabi` (FFI): <fill: N> blocks,
   each with a documented safety contract.
 
 ## Prerequisites
 - Rust (stable) + Cargo; a C compiler (`cc`); **libclang** for bindgen
   (`sudo apt-get install -y libclang-dev`).
-- Optional: nightly + `cargo install cargo-fuzz` (fuzzing); `hyperfine` (benchmarks).
+- Optional: `cargo install --locked kani-verifier && cargo kani setup` (formal
+  verification); nightly + `cargo install cargo-fuzz` (fuzzing); `hyperfine`
+  (benchmarks).
 
 ## Build, test, run — manually
 ```bash
@@ -419,6 +518,9 @@ cargo test -p ${LIB}-rs
 # confirm the core has no unsafe
 bash scripts/check_unsafe.sh
 
+# bounded formal proof smoke over the safe core
+bash scripts/verify_kani.sh
+
 # fuzz (nightly): runs until Ctrl-C, or cap with -max_total_time
 cargo +nightly fuzz run differential -- -max_total_time=60
 cargo +nightly fuzz run no_panic     -- -max_total_time=60
@@ -428,11 +530,13 @@ cargo bench -p ${LIB}-rs
 bash scripts/bench.sh
 ```
 What each proves: `cargo test` = correctness vs the reference; `check_unsafe.sh` =
-safety boundary intact; `fuzz` = no divergence/panic on hostile input; `bench` =
-performance parity.
+safety boundary intact; `verify_kani.sh` = bounded formal proof of documented core
+invariants; `fuzz` = no divergence/panic on hostile input; `bench` = performance
+parity.
 
 ## Results snapshot
 - Tests: <fill: X passed, 0 failed>.
+- Formal verification: <fill: Kani harnesses, bounds, result / not run>.
 - Fuzzing: <fill: which targets, duration, crashes found>.
 - Benchmark: <fill: e.g. "process 0.9–1.1× the C reference">.
 
@@ -503,6 +607,9 @@ written and the deliverables are in place.
 - [ ] `${LIB}-sys` FFI-in via cc+bindgen; allocator-symmetric frees.
 - [ ] `${LIB}-cabi` FFI-out: `extern "C"`, `repr(C)`, `*_free`, cbindgen header.
 - [ ] `${LIB}-diff` proptest (≥1024 cases) on the chosen relation — green.
+- [ ] Formal verification: `FORMAL_VERIFICATION.md` documents Kani harnesses,
+      bounds, invariants, limitations; `scripts/verify_kani.sh` passes or is
+      explicitly marked not run.
 - [ ] Two fuzz targets run clean for ≥ T seconds.
 - [ ] criterion + hyperfine (C `-O3` vs Rust `--release`).
 - [ ] Reproducibility manifest + `Cargo.lock` + CI green.
@@ -616,8 +723,6 @@ fuzz_target!(|data: &[u8]| {
 }
 // [lib] crate-type = ["cdylib","staticlib","rlib"]; build.rs runs cbindgen.
 ```
-
----
 
 *Fill the Config block, then execute the phases in order. Every `${...}` token is a
 parameter; nothing in this playbook is specific to a particular library.*

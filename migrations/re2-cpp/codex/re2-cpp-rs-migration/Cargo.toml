@@ -1,0 +1,27 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/re2-cpp-rs",
+    "crates/re2-cpp-sys",
+    "crates/re2-cpp-cabi",
+    "crates/re2-cpp-diff",
+]
+exclude = ["fuzz"]
+
+[workspace.package]
+edition = "2021"
+license = "BSD-3-Clause"
+rust-version = "1.85.1"
+
+[workspace.dependencies]
+bindgen = "=0.69.5"
+cc = "1.0"
+cbindgen = "=0.26.0"
+criterion = "=0.5.1"
+home = "=0.5.11"
+pkg-config = "0.3"
+proptest = "=1.5.0"
+regex = "1.11"
+re2-cpp-diff = { path = "crates/re2-cpp-diff" }
+re2-cpp-rs = { path = "crates/re2-cpp-rs" }
+re2-cpp-sys = { path = "crates/re2-cpp-sys" }
