@@ -1,0 +1,8 @@
+/target
+**/target
+/build
+Cargo.lock.bak
+fuzz/corpus
+fuzz/artifacts
+fuzz/coverage
+*.qoi

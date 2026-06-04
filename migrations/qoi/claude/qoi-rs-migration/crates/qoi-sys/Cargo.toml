@@ -1,0 +1,21 @@
+[package]
+name = "qoi-sys"
+description = "Inbound FFI bindings to the vendored reference QOI C (the differential oracle's ground truth)."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+# Declares the native library produced by build.rs (cc compiles the vendored C).
+links = "qoi_reference"
+
+[lib]
+name = "qoi_sys"
+path = "src/lib.rs"
+
+[dependencies]
+libc = "0.2"
+
+[build-dependencies]
+cc = "1.0"
+bindgen = "0.70"

@@ -1,0 +1,5 @@
+# Pin the stable toolchain for the workspace. Fuzzing (fuzz/) needs nightly and is
+# invoked explicitly with `cargo +nightly`.
+[toolchain]
+channel = "stable"
+components = ["rustfmt", "clippy"]

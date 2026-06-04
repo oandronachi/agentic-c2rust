@@ -1,0 +1,20 @@
+[package]
+name = "qoi-cabi"
+description = "Outbound FFI: a stable, safe-to-call C ABI exposing the safe Rust QOI port."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[lib]
+name = "qoi_cabi"
+# cdylib + staticlib for C consumers; rlib so Rust tests can drive the ABI directly.
+crate-type = ["cdylib", "staticlib", "rlib"]
+path = "src/lib.rs"
+
+[dependencies]
+qoi-rs = { path = "../qoi-rs" }
+
+[build-dependencies]
+cbindgen = "0.27"

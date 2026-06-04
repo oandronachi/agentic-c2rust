@@ -1,0 +1,19 @@
+[package]
+name = "qoi-diff"
+description = "Differential oracle: proves the safe Rust port (qoi-rs) byte-exact equivalent to the reference C (qoi-sys)."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[lib]
+name = "qoi_diff"
+path = "src/lib.rs"
+
+[dependencies]
+qoi-rs = { path = "../qoi-rs" }
+qoi-sys = { path = "../qoi-sys" }
+
+[dev-dependencies]
+proptest = "1"

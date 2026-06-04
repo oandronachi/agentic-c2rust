@@ -1,0 +1,24 @@
+[package]
+name = "qoi-rs"
+description = "Safe, dependency-free Rust port of the QOI image codec, verified byte-exact against the C reference."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[lib]
+name = "qoi_rs"
+path = "src/lib.rs"
+
+# The published crate has ZERO runtime dependencies (see [dependencies] below — empty).
+# criterion is a dev-dependency only: it is compiled for `cargo bench`/examples of THIS
+# crate but never enters a downstream consumer's dependency graph.
+[dependencies]
+
+[dev-dependencies]
+criterion = "0.5"
+
+[[bench]]
+name = "bench"
+harness = false

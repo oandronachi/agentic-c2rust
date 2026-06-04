@@ -1,0 +1,35 @@
+[package]
+name = "qoi-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+# The port and the differential oracle (which pulls in qoi-sys = the C ground truth).
+qoi-rs = { path = "../crates/qoi-rs" }
+qoi-diff = { path = "../crates/qoi-diff" }
+
+[[bin]]
+name = "differential"
+path = "fuzz_targets/differential.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "no_panic"
+path = "fuzz_targets/no_panic.rs"
+test = false
+doc = false
+bench = false
+
+# cargo-fuzz needs an explicit profile; keep some debug info for good backtraces.
+[profile.release]
+debug = 1
+
+# This crate is its own workspace (the parent excludes `fuzz`).
+[workspace]

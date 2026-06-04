@@ -1,0 +1,79 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-test:
+    name: build & test (stable)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install libclang for bindgen
+        run: sudo apt-get update && sudo apt-get install -y libclang-dev
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Build workspace
+        run: cargo build --workspace --all-targets
+      - name: Test workspace (unit + golden + differential)
+        run: cargo test --workspace
+      - name: Core only (no C toolchain needed)
+        run: cargo test -p qoi-rs
+
+  unsafe-gate:
+    name: unsafe boundary
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Confirm the core is unsafe-free
+        run: sh scripts/check_unsafe.sh
+
+  fuzz-smoke:
+    name: fuzz smoke (nightly)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install libclang for bindgen
+        run: sudo apt-get update && sudo apt-get install -y libclang-dev
+      - uses: dtolnay/rust-toolchain@nightly
+      - uses: Swatinem/rust-cache@v2
+      - name: Install cargo-fuzz
+        run: cargo install cargo-fuzz --locked
+      - name: Differential fuzz (smoke)
+        run: cargo fuzz run differential -- -max_total_time=20
+      - name: No-panic fuzz (smoke)
+        run: cargo fuzz run no_panic -- -max_total_time=20
+
+  bench:
+    name: benchmarks (smoke)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install libclang for bindgen
+        run: sudo apt-get update && sudo apt-get install -y libclang-dev
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: criterion (short sample)
+        run: cargo bench -p qoi-rs -- --warm-up-time 0.2 --measurement-time 0.5 --sample-size 10
+      - name: whole-process C vs Rust (small)
+        run: sh scripts/bench.sh 128 128 4 10
+
+  fmt-clippy:
+    name: fmt & clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install libclang for bindgen
+        run: sudo apt-get update && sudo apt-get install -y libclang-dev
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --all --check
+      # The tree is verified clean, so warnings fail CI.
+      - run: cargo clippy --workspace --all-targets -- -D warnings

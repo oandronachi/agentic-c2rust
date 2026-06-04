@@ -1,0 +1,15 @@
+[package]
+name = "qoi-sys"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+links = "qoi_reference"
+build = "build.rs"
+
+[dependencies]
+libc = "0.2"
+
+[build-dependencies]
+bindgen = "0.69"
+cc = "1"

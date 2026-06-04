@@ -1,0 +1,13 @@
+[package]
+name = "qoi-diff"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+qoi-rs = { path = "../qoi-rs" }
+qoi-sys = { path = "../qoi-sys" }
+
+[dev-dependencies]
+proptest = "1"

@@ -1,0 +1,29 @@
+[package]
+name = "qoi-fuzz"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[package.metadata]
+cargo-fuzz = true
+
+[workspace]
+
+[dependencies]
+libfuzzer-sys = "0.4"
+qoi-diff = { path = "../crates/qoi-diff" }
+qoi-rs = { path = "../crates/qoi-rs" }
+
+[[bin]]
+name = "differential"
+path = "fuzz_targets/differential.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "no_panic"
+path = "fuzz_targets/no_panic.rs"
+test = false
+doc = false
+bench = false

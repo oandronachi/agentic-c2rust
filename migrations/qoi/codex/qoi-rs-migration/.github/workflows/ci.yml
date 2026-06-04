@@ -1,0 +1,40 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends clang libclang-dev pkg-config
+      - run: cargo build --workspace
+      - run: cargo test --workspace
+
+  unsafe-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash scripts/check_unsafe.sh
+
+  fuzz-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends clang libclang-dev pkg-config
+      - run: cargo install cargo-fuzz --locked
+      - run: cargo +nightly fuzz run differential -- -max_total_time=20
+      - run: cargo +nightly fuzz run no_panic -- -max_total_time=20
+
+  bench-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends clang libclang-dev pkg-config hyperfine
+      - run: cargo bench -p qoi-rs --bench bench -- --sample-size 10 --warm-up-time 1 --measurement-time 1
+      - run: W=64 H=64 CH=4 ITERS=5 MODE=encode bash scripts/bench.sh

@@ -1,0 +1,26 @@
+# Workspace for the QOI C -> Rust migration.
+# Members: safe core (qoi-rs), inbound FFI / ground truth (qoi-sys),
+# outbound FFI (qoi-cabi), differential oracle (qoi-diff).
+# `fuzz/` is excluded: it is its own workspace and needs nightly.
+[workspace]
+resolver = "2"
+members = [
+    "crates/qoi-rs",
+    "crates/qoi-sys",
+    "crates/qoi-cabi",
+    "crates/qoi-diff",
+]
+exclude = ["fuzz"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/phoboslab/qoi"
+rust-version = "1.96"
+
+# A release-ish profile for benches/examples; keep defaults otherwise.
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1

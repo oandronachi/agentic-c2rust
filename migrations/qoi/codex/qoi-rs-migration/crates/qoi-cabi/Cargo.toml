@@ -1,0 +1,16 @@
+[package]
+name = "qoi-cabi"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+build = "build.rs"
+
+[lib]
+crate-type = ["cdylib", "staticlib", "rlib"]
+
+[dependencies]
+qoi-rs = { path = "../qoi-rs" }
+
+[build-dependencies]
+cbindgen = "0.27"

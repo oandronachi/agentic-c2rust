@@ -52,6 +52,10 @@ Both FFI directions are covered (`-sys` inbound, `-cabi` outbound), so a C devel
 ├── .gitignore
 ├── playbook/
 │   └── c-to-rust-migration-playbook.md         the agent-executable playbook
+├── migrations/
+│   └── qoi/
+│       ├── claude/qoi-rs-migration/            complete Claude Code QOI Cargo workspace
+│       └── codex/qoi-rs-migration/             complete Codex QOI Cargo workspace
 └── runs/
     ├── README.md                               cross-run results matrix
     ├── claude/
@@ -62,7 +66,7 @@ Both FFI directions are covered (`-sys` inbound, `-cabi` outbound), so a C devel
         └── xxhash.md         xxhash-task.md    Codex × xxHash:       report + agent prompt
 ```
 
-Each run is a pair of files: `<lib>.md` is the one-page report (description, filled config block excerpt, headline results, one snippet); `<lib>-task.md` is the exact prompt the agent received (the playbook with that library's config block filled in). The full Cargo workspaces aren't checked in — they're reproducible by feeding a `*-task.md` to the agent.
+Each run is a pair of files: `<lib>.md` is the one-page report (description, filled config block excerpt, headline results, one snippet); `<lib>-task.md` is the exact prompt the agent received (the playbook with that library's config block filled in). Complete QOI Cargo workspaces are also checked in under [`migrations/qoi/`](./migrations/qoi/) for both Claude Code and Codex, including vendored C, Rust core, bindgen oracle, cbindgen ABI, property tests, fuzz targets, benchmarks, scripts, lockfiles, and CI.
 
 ---
 
@@ -93,5 +97,6 @@ Every phase ends in a machine-checkable exit gate. An agentic CLI follows the pl
 
 - [`GLOSSARY.md`](./GLOSSARY.md) — every term used in the workflow.
 - [`playbook/c-to-rust-migration-playbook.md`](./playbook/c-to-rust-migration-playbook.md) — the actual workflow.
+- [`migrations/qoi/`](./migrations/qoi/) — complete checked-in QOI workspaces from Claude Code and Codex.
 - [`runs/README.md`](./runs/README.md) — side-by-side results across the four reproductions.
 - [`ROADMAP.md`](./ROADMAP.md) — explicit list of what this **isn't yet**.
