@@ -2,9 +2,9 @@
 
 ## About
 
-A practical workflow for **binding C and Rust together** and a **gentle on-ramp for C developers curious about Rust**. The playbook is one config block + ten phases with machine-checkable exit gates, runnable by an agentic CLI (Claude Code, Codex) or a human. Each migration produces a four-crate Cargo workspace: a `#![forbid(unsafe_code)]` safe core, a `bindgen`-backed reference oracle, a `byte_exact` differential proptest + fuzz harness, and an allocator-symmetric C ABI for calling Rust from existing C. **Status:** workflow-and-reproducibility demo — performance not yet tuned, line-by-line port comments pending (see [`ROADMAP.md`](./ROADMAP.md)).
+A practical workflow for **binding C and Rust together** and a **gentle on-ramp for C developers curious about Rust**. The playbook is one config block + ten phases with machine-checkable exit gates, runnable by an agentic CLI (Claude Code, Codex) or a human. Each migration produces a multi-crate Cargo workspace: a `#![forbid(unsafe_code)]` safe core, a `bindgen`-backed reference oracle, a differential proptest + fuzz harness, and an allocator-symmetric C ABI for calling Rust from existing C. **Status:** workflow-and-reproducibility demo — performance not yet tuned, line-by-line port comments pending (see [`ROADMAP.md`](./ROADMAP.md)).
 
-Four worked examples ship alongside the playbook: it is applied to **two** real C libraries (`phoboslab/qoi`, `Cyan4973/xxHash`) by **two** different agentic CLIs (Claude Code, Codex). If anything below is unfamiliar, the [**Glossary**](./GLOSSARY.md) defines every term.
+Four core worked examples ship alongside the playbook: it is applied to **two** real C libraries (`phoboslab/qoi`, `Cyan4973/xxHash`) by **two** different agentic CLIs (Claude Code, Codex). Additional Codex run reports cover a stateful C ring buffer and a C++ RE2 ownership interop example. If anything below is unfamiliar, the [**Glossary**](./GLOSSARY.md) defines every term.
 
 ---
 
@@ -63,7 +63,9 @@ Both FFI directions are covered (`-sys` inbound, `-cabi` outbound), so a C devel
     │   └── xxhash.md         xxhash-task.md    Claude Code × xxHash: report + agent prompt
     └── codex/
         ├── qoi.md            qoi-task.md       Codex × QOI:          report + agent prompt
-        └── xxhash.md         xxhash-task.md    Codex × xxHash:       report + agent prompt
+        ├── xxhash.md         xxhash-task.md    Codex × xxHash:       report + agent prompt
+        ├── ring-buffer.md    ring-buffer-task.md
+        └── re2-cpp.md        re2-cpp-task.md
 ```
 
 Each run is a pair of files: `<lib>.md` is the one-page report (description, filled config block excerpt, headline results, one snippet); `<lib>-task.md` is the exact prompt the agent received (the playbook with that library's config block filled in). Complete QOI Cargo workspaces are also checked in under [`migrations/qoi/`](./migrations/qoi/) for both Claude Code and Codex, including vendored C, Rust core, bindgen oracle, cbindgen ABI, property tests, fuzz targets, benchmarks, scripts, lockfiles, and CI.
@@ -98,5 +100,5 @@ Every phase ends in a machine-checkable exit gate. An agentic CLI follows the pl
 - [`GLOSSARY.md`](./GLOSSARY.md) — every term used in the workflow.
 - [`playbook/c-to-rust-migration-playbook.md`](./playbook/c-to-rust-migration-playbook.md) — the actual workflow.
 - [`migrations/qoi/`](./migrations/qoi/) — complete checked-in QOI workspaces from Claude Code and Codex.
-- [`runs/README.md`](./runs/README.md) — side-by-side results across the four reproductions.
+- [`runs/README.md`](./runs/README.md) — side-by-side results across the core reproductions and follow-on stateful/C++ runs.
 - [`ROADMAP.md`](./ROADMAP.md) — explicit list of what this **isn't yet**.

@@ -6,11 +6,11 @@ A **recipe-and-reproducibility demo**, not a polished library. Calling that out 
 
 ```mermaid
 flowchart LR
-    A[Today<br/>workflow runs end-to-end<br/>byte-exact equivalence<br/>parity-class benchmarks] --> B[Next<br/>profile-guided<br/>optimization pass]
+    A[Today<br/>workflow runs end-to-end<br/>byte-exact equivalence<br/>stateful + C++ demos] --> B[Next<br/>profile-guided<br/>optimization pass]
     A --> C[Next<br/>line-by-line<br/>port-walk comments]
     A --> D[Next<br/>parallel critic agent<br/>self-review loop]
-    A --> E[Later<br/>stateful libraries<br/>opaque handles]
-    A --> F[Later<br/>formal verification<br/>Kani / Creusot]
+    A --> E[Later<br/>larger stateful libraries<br/>callbacks + handles]
+    A --> F[Later<br/>deeper formal verification<br/>Kani / Creusot]
 
     classDef now fill:#e8f5e9,stroke:#1b5e20,color:#000
     classDef soon fill:#fff3cd,stroke:#856404,color:#000
@@ -47,10 +47,10 @@ The current Rust sources carry doc-comments on the public API, safety-contract c
 Each run is executed by a single agent. Wiring a parallel critic agent into the playbook (e.g. after Phase 4: a second agent reviews the port, runs the oracle, files a fix) is the natural next step.
 
 ### 4. Larger / harder libraries
-QOI is ~300 LOC, single-header, deterministic. xxHash one-shot is ~250 LOC, pure function. They were chosen because they let the **oracle** be byte-exact and the **port** finish in one pass. The playbook's "Adaptation guide" already covers opaque handles, callbacks, FP, streaming, etc., but none of that has been **proven** end-to-end yet. A migration of a small but stateful library (e.g. a parser with an opaque handle) is the right next demo.
+QOI is ~300 LOC, single-header, deterministic. xxHash one-shot is ~250 LOC, pure function. They were chosen because they let the **oracle** be byte-exact and the **port** finish in one pass. The follow-on Codex reports now add a small stateful ring buffer and a C++ RE2 ownership facade, so the next demo should move beyond "small but stateful" into callbacks, larger opaque-handle APIs, streaming parsers, or allocator-heavy libraries.
 
 ### 5. Formal verification path
-Differential fuzzing covers a lot, but it isn't a proof. Integrating Kani / Creusot on the safe core for a small invariant proof would close that gap.
+Differential fuzzing covers a lot, but it isn't a proof. The RE2 C++ interop run includes a first Kani proof smoke over core invariants; the next step is deeper verification on a richer pure core, or a Creusot/Kani phase that proves more than bounded no-panic and simple lifecycle invariants.
 
 ## Working as intended (not on the roadmap)
 

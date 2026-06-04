@@ -1,6 +1,6 @@
 # Runs — cross-reproduction results matrix
 
-Four reproductions of the same [playbook](../playbook/c-to-rust-migration-playbook.md): **two agentic CLIs × two C libraries**. Each run distilled to a single page; the headline numbers come straight from the agent's `SUMMARY.md`, no extrapolation.
+The original matrix contains four reproductions of the same [playbook](../playbook/c-to-rust-migration-playbook.md): **two agentic CLIs x two C libraries**. Additional Codex runs extend the coverage to a stateful C API and a C++ RAII interop component. Each run is distilled to a single page; headline details come from the generated workspace reports, notes, and verification files.
 
 Each run ships as two files side by side:
 
@@ -42,6 +42,13 @@ Every run reports: **zero mismatches; no port bug found after initial implementa
 | `claude/xxhash` | 75 + 2 canonical | 3 props × 2048 + 130×5 boundary sweep   | 122 s, **18,711,247** execs, 0 crashes |
 | `codex/qoi`     | 6  | 2048                                     | 122 s, **2,226,427** execs, 0 crashes |
 | `codex/xxhash`  | 12 | 2048                                     | 122 s, **52,675,307** execs, 0 crashes |
+
+## Follow-on coverage
+
+| Run (report -> task) | What it adds | Oracle / verification |
+|---|---|---|
+| [`codex/ring-buffer.md`](./codex/ring-buffer.md) -> [task](./codex/ring-buffer-task.md) | Stateful C API with caller-provided storage, overwrite-on-full behavior, and observable state transitions | `model_based` oracle comparing C and Rust after each generated operation; property tests, fuzz targets, benchmarks, and CI included |
+| [`codex/re2-cpp.md`](./codex/re2-cpp.md) -> [task](./codex/re2-cpp-task.md) | C++ RAII ownership facade around non-copyable, non-movable `re2::RE2` | `behavioral` oracle over bounded literal matching; Docker validation, fuzz smoke, and Kani proof smoke completed |
 
 ## What's interesting
 
