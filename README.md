@@ -1,5 +1,7 @@
 # Agentic C/C++ ↔ Rust Migration
 
+[![CI](https://github.com/oandronachi/agentic-c2rust/actions/workflows/ci.yml/badge.svg)](https://github.com/oandronachi/agentic-c2rust/actions/workflows/ci.yml)
+
 ## About
 
 A practical workflow for **binding C/C++ and Rust together** and a **gentle on-ramp for C and C++ developers curious about Rust**. The playbook is one config block plus machine-checkable phases, runnable by an agentic CLI (Claude Code, Codex) or a human. Each migration produces a multi-crate Cargo workspace: a `#![forbid(unsafe_code)]` safe core, a `bindgen`-backed reference oracle, a differential proptest + fuzz harness, and an allocator-symmetric C ABI for calling Rust from existing native code. **Status:** workflow-and-reproducibility demo — performance not yet tuned, line-by-line port comments pending (see [`ROADMAP.md`](./ROADMAP.md)).

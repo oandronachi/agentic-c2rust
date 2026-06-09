@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  migration-workspaces:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: qoi-codex
+            path: migrations/qoi/codex/qoi-rs-migration
+            native_deps: clang libclang-dev pkg-config
+
+          - name: qoi-claude
+            path: migrations/qoi/claude/qoi-rs-migration
+            native_deps: clang libclang-dev pkg-config
+
+          - name: re2-cpp-codex
+            path: migrations/re2-cpp/codex/re2-cpp-rs-migration
+            native_deps: g++ pkg-config libre2-dev libclang-dev clang
+
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@v6
+
+      - name: Install native dependencies
+        env:
+          NATIVE_DEPS: ${{ matrix.native_deps }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends $NATIVE_DEPS
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@1.85.1
+
+      - name: Build workspace
+        working-directory: ${{ matrix.path }}
+        run: cargo build --workspace --all-targets
+
+      - name: Test workspace
+        working-directory: ${{ matrix.path }}
+        run: cargo test --workspace
+
+      - name: Check unsafe boundary policy
+        working-directory: ${{ matrix.path }}
+        run: bash scripts/check_unsafe.sh
