@@ -21,14 +21,17 @@ jobs:
           - name: qoi-codex
             path: migrations/qoi/codex/qoi-rs-migration
             native_deps: clang libclang-dev pkg-config
+            toolchain: 1.96.0
 
           - name: qoi-claude
             path: migrations/qoi/claude/qoi-rs-migration
             native_deps: clang libclang-dev pkg-config
+            toolchain: stable
 
           - name: re2-cpp-codex
             path: migrations/re2-cpp/codex/re2-cpp-rs-migration
             native_deps: g++ pkg-config libre2-dev libclang-dev clang
+            toolchain: 1.85.1
 
     steps:
       - name: Check out sources
@@ -42,7 +45,9 @@ jobs:
           sudo apt-get install -y --no-install-recommends $NATIVE_DEPS
 
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@1.85.1
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.toolchain }}
 
       - name: Build workspace
         working-directory: ${{ matrix.path }}
