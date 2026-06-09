@@ -1,5 +1,5 @@
-# Pin the stable toolchain for the workspace. Fuzzing (fuzz/) needs nightly and is
-# invoked explicitly with `cargo +nightly`.
+# Pin the workspace to the minimum Rust release declared in Cargo.toml. Fuzzing
+# (fuzz/) needs nightly and is invoked explicitly with `cargo +nightly`.
 [toolchain]
-channel = "stable"
+channel = "1.96.0"
 components = ["rustfmt", "clippy"]

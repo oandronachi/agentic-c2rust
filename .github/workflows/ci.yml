@@ -26,7 +26,7 @@ jobs:
           - name: qoi-claude
             path: migrations/qoi/claude/qoi-rs-migration
             native_deps: clang libclang-dev pkg-config
-            toolchain: stable
+            toolchain: 1.96.0
 
           - name: re2-cpp-codex
             path: migrations/re2-cpp/codex/re2-cpp-rs-migration
