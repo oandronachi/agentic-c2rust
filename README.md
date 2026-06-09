@@ -1,6 +1,9 @@
 # Agentic C/C++ ↔ Rust Migration
 
 [![CI](https://github.com/oandronachi/agentic-c2rust/actions/workflows/ci.yml/badge.svg)](https://github.com/oandronachi/agentic-c2rust/actions/workflows/ci.yml)
+[![License](https://img.shields.io/github/license/oandronachi/agentic-c2rust)](./LICENSE)
+[![Rust](https://img.shields.io/badge/Rust-migration-000000?logo=rust&logoColor=white)](./README.md)
+[![C/C++ Interop](https://img.shields.io/badge/C%2FC%2B%2B-interop-00599C)](./README.md)
 
 ## About
 
